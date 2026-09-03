@@ -19,7 +19,7 @@ class Config(object):
     START_PIC   = os.environ.get("START_PIC", "")
     LEADERBOARD_PIC = os.environ.get("LEADERBOARD_PIC", "")
     OWNER_ID = int(os.environ.get("OWNER_ID", ""))
-    SUPPORT_CHAT = int(os.environ.get("SUPPORT_CHAT", ""))
+    SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", "")
     LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", ""))
     FSUB_PIC = os.environ.get("FSUB_PIC", "")
     BOT_USERNAME = os.environ.get("BOT_USERNAME", "")
