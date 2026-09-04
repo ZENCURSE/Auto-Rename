@@ -126,7 +126,7 @@ async def metadata_callback(client, query: CallbackQuery):
 async def title(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /settitle Encoded By @RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /settitle Encoded By @CodeRips**")
     title = message.text.split(" ", 1)[1]
     await db.set_title(message.from_user.id, title=title)
     await message.reply_text("**✅ Tɪᴛʟᴇ Sᴀᴠᴇᴅ**")
@@ -139,7 +139,7 @@ async def title(client, message):
 async def author(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Aᴜᴛʜᴏʀ\n\nExᴀᴍᴩʟᴇ:- /setauthor @RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Aᴜᴛʜᴏʀ\n\nExᴀᴍᴩʟᴇ:- /setauthor @CodeRips**")
     author = message.text.split(" ", 1)[1]
     await db.set_author(message.from_user.id, author=author)
     await message.reply_text("**✅ Aᴜᴛʜᴏʀ Sᴀᴠᴇᴅ**")
@@ -152,7 +152,7 @@ async def author(client, message):
 async def artist(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Aʀᴛɪꜱᴛ\n\nExᴀᴍᴩʟᴇ:- /setartist RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Aʀᴛɪꜱᴛ\n\nExᴀᴍᴩʟᴇ:- /setartist CodeRips**")
     artist = message.text.split(" ", 1)[1]
     await db.set_artist(message.from_user.id, artist=artist)
     await message.reply_text("**✅ Aʀᴛɪꜱᴛ Sᴀᴠᴇᴅ**")
@@ -165,7 +165,7 @@ async def artist(client, message):
 async def audio(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Aᴜᴅɪᴏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setaudio @RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Aᴜᴅɪᴏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setaudio @CodeRips**")
     audio = message.text.split(" ", 1)[1]
     await db.set_audio(message.from_user.id, audio=audio)
     await message.reply_text("**✅ Aᴜᴅɪᴏ Sᴀᴠᴇᴅ**")
@@ -178,7 +178,7 @@ async def audio(client, message):
 async def subtitle(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Sᴜʙᴛɪᴛʟᴇ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setsubtitle @RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Sᴜʙᴛɪᴛʟᴇ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setsubtitle @CodeRips**")
     subtitle = message.text.split(" ", 1)[1]
     await db.set_subtitle(message.from_user.id, subtitle=subtitle)
     await message.reply_text("**✅ Sᴜʙᴛɪᴛʟᴇ Sᴀᴠᴇᴅ**")
@@ -191,7 +191,7 @@ async def subtitle(client, message):
 async def video(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Vɪᴅᴇᴏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setvideo Encoded by @RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Vɪᴅᴇᴏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setvideo Encoded by @CodeRips**")
     video = message.text.split(" ", 1)[1]
     await db.set_video(message.from_user.id, video=video)
     await message.reply_text("**✅ Vɪᴅᴇᴏ Sᴀᴠᴇᴅ**")
@@ -204,7 +204,7 @@ async def video(client, message):
 async def encoded_by(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Eɴᴄᴏᴅᴇᴅ Bʏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setencoded_by @RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Eɴᴄᴏᴅᴇᴅ Bʏ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setencoded_by @CodeRips**")
     encoded_by = message.text.split(" ", 1)[1]
     await db.set_encoded_by(message.from_user.id, encoded_by=encoded_by)
     await message.reply_text("**✅ Eɴᴄᴏᴅᴇᴅ Bʏ Sᴀᴠᴇᴅ**")
@@ -217,7 +217,7 @@ async def encoded_by(client, message):
 async def custom_tag(client, message):
     if len(message.command) == 1:
         return await message.reply_text(
-            "**Gɪᴠᴇ Tʜᴇ Cᴜsᴛᴏᴍ Tᴀɢ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setcustom_tag @RexBots_Official**")
+            "**Gɪᴠᴇ Tʜᴇ Cᴜsᴛᴏᴍ Tᴀɢ Tɪᴛʟᴇ\n\nExᴀᴍᴩʟᴇ:- /setcustom_tag @CodeRips**")
     custom_tag = message.text.split(" ", 1)[1]
     await db.set_custom_tag(message.from_user.id, custom_tag=custom_tag)
     await message.reply_text("**✅ Eɴᴄᴏᴅᴇᴅ Bʏ Sᴀᴠᴇᴅ**")
