@@ -607,7 +607,7 @@ async def tutorial(bot, message):
         text=Config.FILE_NAME_TXT.format(format_template=format_template),
         disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("• Sᴜᴘᴘᴏʀᴛ •", url="https://t.me/BOTSKINGDOMSGROUP"), InlineKeyboardButton("•⚡Mᴀɪɴ ʜᴜʙ •", url="https://t.me/botskingdoms")]
+            [InlineKeyboardButton("• Sᴜᴘᴘᴏʀᴛ •", url="https://t.me/Code_Rips_Support"), InlineKeyboardButton("•⚡Mᴀɪɴ ʜᴜʙ •", url="https://t.me/CodeRips")]
         ])
     )
 # ----------------------------------------
@@ -625,6 +625,7 @@ async def get_stats(bot, message):
     time_taken_s = (end_t - start_t) * 1000
     await st.edit(text=f"**Bᴏᴛ Sᴛᴀᴛᴜꜱ:** \n\n**➲ Bᴏᴛ Uᴘᴛɪᴍᴇ:** `{uptime}` \n**➲ Pɪɴɢ:** `{time_taken_s:.3f} ms` \n**➲ Vᴇʀsɪᴏɴ:** 2.0.0 \n**➲ Tᴏᴛᴀʟ Uꜱᴇʀꜱ:** `{total_users}`")
 
+@Client.on_message(filters.command("broadcast") & filters.private & admin & filters.reply)
 @Client.on_message(filters.command("broadcast") & filters.private & admin & filters.reply)
 async def broadcast_handler(bot: Client, m: Message):
     await bot.send_message(Config.LOG_CHANNEL, f"Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ Bʏ {m.from_user.mention}")
@@ -656,7 +657,7 @@ async def send_msg(user_id, message):
         return 200
     except FloodWait as e:
         await asyncio.sleep(e.value)
-        return send_msg(user_id, message)
+        return await send_msg(user_id, message)
     except InputUserDeactivated:
         logger.info(f"{user_id} : Deactivated")
         return 400
@@ -831,37 +832,5 @@ async def leaderboard_handler(bot: Client, message: Message):
         await asyncio.sleep(Config.LEADERBOARD_DELETE_TIMER)
         try:
             await error_msg.delete()
-            @Client.on_message(filters.command("broadcast") & filters.private & admin & filters.reply)
-async def broadcast_handler(bot: Client, m: Message):
-    all_users = await rexbots.get_all_users()
-    broadcast_msg = m.reply_to_message
-    sts_msg = await m.reply_text("**Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ...!!**")
-    done = 0
-    success = 0
-    failed = 0
-    total_users = await rexbots.total_users_count()
-    async for user in all_users:
-        sts = await send_msg(user['_id'], broadcast_msg)
-        if sts == 200:
-            success+=1
-        else:
-            failed+=1
-        done+=1
-        if not done % 20:
-            await sts_msg.edit(f"Progress: {done}/{total_users} Success:{success} Failed:{failed}")
-    await sts_msg.edit(f"Broadcast Done - Total:{total_users} Success:{success} Failed:{failed}")
-
-async def send_msg(user_id, message):
-    try:
-        await message.copy(chat_id=int(user_id))
-        return 200
-    except FloodWait as e:
-        await asyncio.sleep(e.value)
-        return await send_msg(user_id, message)
-    except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
-        return 400
-    except Exception as e:
-        logger.error(f"{user_id} : {e}")
-        return 500
         except Exception as e:
             logger.error(f"Error deleting error_msg: {e}")
