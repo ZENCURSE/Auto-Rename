@@ -428,11 +428,11 @@ async def start(client, message: Message):
 async def show_start_message(client, message: Message):
     """Show the start message with buttons"""
     m = await message.reply_text("Wᴇᴡ...Hᴏᴡ ᴀʀᴇ ʏᴏᴜ ᴅᴜᴅᴇ \nᴡᴀɪᴛ ᴀ ᴍᴏᴍᴇɴᴛ. . .")
-    await asyncio.sleep(0.4)
+    await asyncio.sleep(0.2)
     await m.edit_text("🎊")
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.2)
     await m.edit_text("⚡")
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.2)
     await message.reply_chat_action(ChatAction.CHOOSE_STICKER)
     await asyncio.sleep(3)
     await m.edit_text("Iᴀᴍ sᴛᴀʀᴛɪɴɢ...!!")
