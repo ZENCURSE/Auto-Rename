@@ -74,10 +74,10 @@ class Config(object):
 » ꜰᴏʀ ᴇx:- /set_caption ꜰɪʟᴇ ɴᴀᴍᴇ: {ꜰɪʟᴇɴᴀᴍᴇ}"""
 
     PROGRESS_BAR = """\n
-<b>📁 Size</b> : {1} | {2}
-<b>⏳️ Done</b> : {0}%
-<b>🚀 Speed</b> : {3}/s
-<b>⏰️ ETA</b> : {4} """
+<b>📁𝐅ɪʟᴇ ꜱɪᴢᴇ</b> : {1} | {2}
+<b>⏳️ ᴅᴏɴᴇ</b> : {0}%
+<b>🚀 𝐒ᴩᴇᴇᴅ</b> : {3}/s
+<b>⏰️ 𝐄ᴛᴀ</b> : {4} """
     
     
     DONATE_TXT = """<blockquote> ᴛʜᴀɴᴋs ғᴏʀ sʜᴏᴡɪɴɢ ɪɴᴛᴇʀᴇsᴛ ɪɴ ᴅᴏɴᴀᴛɪᴏɴ</blockquote>
