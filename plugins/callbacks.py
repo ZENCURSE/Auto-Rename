@@ -62,7 +62,7 @@ async def cb_handler(client, query: CallbackQuery):
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
-                    [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/cantarellabots'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/+diDK3GRvvvlhZTQ1')],
+                    [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/CodeRips'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/+diDK3GRvvvlhZTQ1')],
                     [InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'), InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ •', url='https://t.me/seishiro_obito')]
                 ])
             )
@@ -71,7 +71,7 @@ async def cb_handler(client, query: CallbackQuery):
                 text=Config.CAPTION_TXT,
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• sᴜᴘᴘᴏʀᴛ", url='https://t.me/+diDK3GRvvvlhZTQ1'), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
+                    [InlineKeyboardButton("• sᴜᴘᴘᴏʀᴛ", url='https://t.me/Code_Rips_Support'), InlineKeyboardButton("ʙᴀᴄᴋ •", callback_data="help")]
                 ])
             )
         elif data == "help":
@@ -107,7 +107,7 @@ async def cb_handler(client, query: CallbackQuery):
                 text=Config.DONATE_TXT,
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help"), InlineKeyboardButton("ᴏᴡɴᴇʀ •", url='https://t.me/cantarellabots')]
+                    [InlineKeyboardButton("• ʙᴀᴄᴋ", callback_data="help"), InlineKeyboardButton("ᴏᴡɴᴇʀ •", url='https://t.me/CodeRips')]
                 ])
             )
         elif data == "file_names":
