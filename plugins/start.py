@@ -288,7 +288,7 @@ def check_fsub(func):
 # ----------------------------------------
 async def not_joined(client: Client, message: Message):
     logger.debug(f"not_joined function called for user {message.from_user.id}")
-    temp = await message.reply("<b><i>ᴡᴀɪᴛ ᴀ sᴇᴄ..</i></b>")
+    temp = await message.reply("<b><i>❤️ꜱᴇʀᴠᴇʀ ꜱᴛᴀʀᴛ ᴜᴩ....</i></b>")
 
     # Add a check to ensure temp message exists before proceeding
     if not temp:
@@ -372,7 +372,7 @@ async def not_joined(client: Client, message: Message):
         except IndexError:
             pass
 
-        text = "<b>Yᴏᴜ Bᴀᴋᴋᴀᴀ...!! \n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
+        text = "<b>ʜᴇʏ ᴍʏ ꜰʀɪᴇɴᴅ\n\n<blockquote>Jᴏɪɴ ᴍʏ ᴄʜᴀɴɴᴇʟ ᴜᴩᴅᴀᴛᴇ ᴛᴏ ᴜsᴇ ᴍʏ ᴏᴛʜᴇʀᴡɪsᴇ Yᴏᴜ ᴀʀᴇ ɪɴ ʙɪɢ sʜɪᴛ...!!</blockquote></b>"
         if temp:
             try:
                 await temp.delete()
@@ -443,7 +443,7 @@ async def show_start_message(client, message: Message):
 
     buttons = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴds •", callback_data='help')
+            InlineKeyboardButton("• ᴄᴏᴍᴍᴀɴᴅꜱ •", callback_data='help')
         ],
         [
             InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/CodeRips'),
