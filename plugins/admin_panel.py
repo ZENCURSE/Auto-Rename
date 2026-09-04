@@ -831,5 +831,37 @@ async def leaderboard_handler(bot: Client, message: Message):
         await asyncio.sleep(Config.LEADERBOARD_DELETE_TIMER)
         try:
             await error_msg.delete()
+            @Client.on_message(filters.command("broadcast") & filters.private & admin & filters.reply)
+async def broadcast_handler(bot: Client, m: Message):
+    all_users = await rexbots.get_all_users()
+    broadcast_msg = m.reply_to_message
+    sts_msg = await m.reply_text("**Bʀᴏᴀᴅᴄᴀsᴛ Sᴛᴀʀᴛᴇᴅ...!!**")
+    done = 0
+    success = 0
+    failed = 0
+    total_users = await rexbots.total_users_count()
+    async for user in all_users:
+        sts = await send_msg(user['_id'], broadcast_msg)
+        if sts == 200:
+            success+=1
+        else:
+            failed+=1
+        done+=1
+        if not done % 20:
+            await sts_msg.edit(f"Progress: {done}/{total_users} Success:{success} Failed:{failed}")
+    await sts_msg.edit(f"Broadcast Done - Total:{total_users} Success:{success} Failed:{failed}")
+
+async def send_msg(user_id, message):
+    try:
+        await message.copy(chat_id=int(user_id))
+        return 200
+    except FloodWait as e:
+        await asyncio.sleep(e.value)
+        return await send_msg(user_id, message)
+    except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
+        return 400
+    except Exception as e:
+        logger.error(f"{user_id} : {e}")
+        return 500
         except Exception as e:
             logger.error(f"Error deleting error_msg: {e}")
