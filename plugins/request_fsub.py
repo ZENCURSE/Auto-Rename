@@ -8,6 +8,7 @@ import os
 import random
 import sys
 import time
+import html
 from pyrogram import Client, filters, __version__
 from pyrogram.enums import ParseMode, ChatAction, ChatMemberStatus, ChatType
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ReplyKeyboardMarkup, ChatMemberUpdated, ChatPermissions
@@ -143,7 +144,7 @@ async def add_force_sub(client: Client, message: Message):
 
     except Exception as e:
         return await temp.edit(
-            f"<b>❌ Failed to add channel:</b>\n<code>{channel_id}</code>\n\n<i>{e}</i>"
+            f"<b>❌ Failed to add channel:</b>\n<code>{channel_id}</code>\n\n<i>{html.escape(str(e))}</i>"
         )
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈

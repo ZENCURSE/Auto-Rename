@@ -602,56 +602,56 @@ class Seishiro:
 
     async def get_title(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('title', 'CantarellaBots')
+        return user.get('title', 'CodeRips')
 
     async def set_title(self, user_id, title):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'title': title}})
 
     async def get_author(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('author', 'CantarellaBots')
+        return user.get('author', 'CodeRips')
 
     async def set_author(self, user_id, author):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'author': author}})
 
     async def get_artist(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('artist', 'CantarellaBots')
+        return user.get('artist', 'CodeRips')
 
     async def set_artist(self, user_id, artist):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'artist': artist}})
 
     async def get_audio(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('audio', 'CantarellaBots')
+        return user.get('audio', 'CodeRips')
 
     async def set_audio(self, user_id, audio):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'audio': audio}})
 
     async def get_subtitle(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('subtitle', "CantarellaBots")
+        return user.get('subtitle', "CodeRips")
 
     async def set_subtitle(self, user_id, subtitle):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'subtitle': subtitle}})
 
     async def get_video(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('video', 'CantarellaBots')
+        return user.get('video', 'CodeRips')
 
     async def set_video(self, user_id, video):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'video': video}})
 
     async def get_encoded_by(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('encoded_by', "CantarellaBots")
+        return user.get('encoded_by', "CodeRips")
 
     async def set_encoded_by(self, user_id, encoded_by):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'encoded_by': encoded_by}})
         
     async def get_custom_tag(self, user_id):
         user = await self.col.find_one({'_id': int(user_id)})
-        return user.get('custom_tag', "CantarellaBots")
+        return user.get('custom_tag', "CodeRips")
 
     async def set_custom_tag(self, user_id, custom_tag):
         await self.col.update_one({'_id': int(user_id)}, {'$set': {'custom_tag': custom_tag}})

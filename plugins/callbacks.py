@@ -68,7 +68,7 @@ async def cb_handler(client, query: CallbackQuery):
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton("• ᴍʏ ᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs •", callback_data='help')],
                     [InlineKeyboardButton('• ᴜᴘᴅᴀᴛᴇs', url='https://t.me/CodeRips'), InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ •', url='https://t.me/Code_Rips_Support')],
-                    [InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'), InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ •', url='https://t.me/ZENCURSE')]
+                    [InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'), InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ •', url='https://t.me/CodeRips')]
                 ])
             )
         elif data == "caption":

@@ -83,7 +83,7 @@ You can easily deploy this bot yourself by following the steps below.
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/abhinai2244/Auto-Rename.git
+    git clone https://github.com/ZENCURSE/Auto-Rename.git
     cd Auto-Rename
     ```
 

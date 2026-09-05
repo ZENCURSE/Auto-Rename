@@ -9,6 +9,7 @@ import asyncio
 import base64
 import logging
 import string
+import html
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.enums import ChatAction, ChatMemberStatus
@@ -192,16 +193,16 @@ def check_verification(func):
             except Exception as e:
                 logger.error(f"Error sending verification message in decorator: {e}")
                 await message.reply_text(
-                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE</i></b>\n"
-                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
                 )
             return
             
         except Exception as e:
             logger.error(f"FATAL ERROR in check_verification decorator: {e}")
             await message.reply_text(
-                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE</i></b>\n"
-                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
             )
             return
     
@@ -357,8 +358,8 @@ async def not_joined(client: Client, message: Message):
                 except Exception as e:
                     logger.error(f"Error with chat {chat_id}: {e}")
                     await temp.edit(
-                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE</i></b>\n"
-                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
+                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
                     )
                     return
 
@@ -389,8 +390,8 @@ async def not_joined(client: Client, message: Message):
     except Exception as e:
         logger.error(f"Final Error in not_joined: {e}")
         await temp.edit(
-            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE</i></b>\n"
-            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
         )
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
@@ -451,7 +452,7 @@ async def show_start_message(client, message: Message):
         ],
         [
             InlineKeyboardButton('• ᴀʙᴏᴜᴛ', callback_data='about'),
-            InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ•', url='https://t.me/ZENCURSE')
+            InlineKeyboardButton('Dᴇᴠᴇʟᴏᴘᴇʀ•', url='https://t.me/CodeRips')
         ]
     ])
 
@@ -622,8 +623,8 @@ async def handle_verification_callback(client, message: Message, token: str):
     except Exception as e:
         logger.error(f"[VERIFY] FATAL ERROR in handle_verification_callback: {e}", exc_info=True)
         await message.reply_text(
-            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE</i></b>\n"
-            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
         )
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
@@ -690,7 +691,7 @@ async def send_verification_message(client, message: Message):
     
     if not shortlink:
         await message.reply_text(
-            "Eʀʀᴏʀ ɢᴇɴᴇʀᴀᴛɪɴɢ sʜᴏʀᴛʟɪɴᴋ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ ᴏʀ ᴄᴏɴᴛᴀᴄᴛ @ZENCURSE."
+            "Eʀʀᴏʀ ɢᴇɴᴇʀᴀᴛɪɴɢ sʜᴏʀᴛʟɪɴᴋ. Pʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ ᴏʀ ᴄᴏɴᴛᴀᴄᴛ @CodeRips."
         )
         return None
     
@@ -903,8 +904,8 @@ async def verify_command(client, message: Message):
     except Exception as e:
         logger.error(f"Error sending verification message: {e}")
         await message.reply_text(
-            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE</i></b>\n"
-            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
         )
 
 

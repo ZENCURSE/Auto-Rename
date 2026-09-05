@@ -118,7 +118,7 @@ async def add_admins(client: Client, message: Message):
                 reply_markup=reply_markup
             )
     except Exception as e:
-        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
+        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{html.escape(str(e))}</code>")
 
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
@@ -189,7 +189,7 @@ async def delete_admins(client: Client, message: Message):
                 reply_markup=reply_markup
             )
     except Exception as e:
-        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
+        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{html.escape(str(e))}</code>")
 
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
@@ -219,7 +219,7 @@ async def get_admins(client: Client, message: Message):
             reply_markup=reply_markup
         )
     except Exception as e:
-        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
+        await pro.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{html.escape(str(e))}</code>")
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖
@@ -283,7 +283,7 @@ async def ban_user(bot, message):
             pass
             
     except Exception as e:
-        await message.reply_text(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
+        await message.reply_text(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{html.escape(str(e))}</code>")
 
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
@@ -337,7 +337,7 @@ async def unban_user(bot, message):
     except Exception as e:
         await message.reply_text(
             "<b>Usᴇ ɪᴛ ʟɪᴋᴇ ᴛʜɪs:</b> <code>/unban &lt;ᴜsᴇʀ_ɪᴅ&gt;</code>\n\n"
-            f"<b>❌ Eʀʀᴏʀ:</b> <code>{str(e)}</code>"
+            f"<b>❌ Eʀʀᴏʀ:</b> <code>{html.escape(str(e))}</code>"
         )
 
 # ----------------------------------------
@@ -389,7 +389,7 @@ async def banned_list(bot, message):
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close")]])
             )
     except Exception as e:
-        await msg.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{str(e)}</code>")
+        await msg.edit(f"<b>❌ Eʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ:</b> <code>{html.escape(str(e))}</code>")
         
 #============== Premium commands ====================
 
@@ -826,7 +826,7 @@ async def leaderboard_handler(bot: Client, message: Message):
         logger.error(f"Error in leaderboard_handler: {e}")
         error_msg = await message.reply_text(
             "<b>Eʀʀᴏʀ ɢᴇɴᴇʀᴀᴛɪɴɢ ʟᴇᴀᴅᴇʀʙᴏᴀʀᴅ!</b>\n"
-            f"<code>{str(e)}</code>\n\n"
+            f"<code>{html.escape(str(e))}</code>\n\n"
             f"**Tʜɪs ᴍᴇssᴀɢᴇ ᴡɪʟʟ sᴇʟғ-ᴅᴇsᴛʀᴜᴄᴛ ɪɴ {Config.LEADERBOARD_DELETE_TIMER} sᴇᴄᴏɴᴅs.**"
         )
         await asyncio.sleep(Config.LEADERBOARD_DELETE_TIMER)

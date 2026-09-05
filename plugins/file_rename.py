@@ -9,6 +9,7 @@ import json
 import time
 import shutil
 import asyncio
+import html
 import logging
 import uuid
 import pytz
@@ -22,6 +23,7 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor  # Added missing import
 from plugins.antinsfw import check_anti_nsfw
 from helper.utils import progress_for_pyrogram, humanbytes, convert
+from helper.media import metadata_args, metadata_values, probe_media, run_ffmpeg, safe_filename
 from helper.database import rexbots
 from plugins.start import *
 from config import Config
@@ -40,6 +42,17 @@ BOT_USERNAME = Config.BOT_USERNAME
 OWNER_ID = Config.OWNER_ID
 FSUB_LINK_EXPIRY = 10
 thread_pool = ThreadPoolExecutor(max_workers=4)
+logger = logging.getLogger(__name__)
+
+
+async def _safe_edit(message, text):
+    """Update a status message without hiding the original media error."""
+    if not message:
+        return
+    try:
+        await message.edit(text)
+    except Exception:
+        logger.debug("Unable to update a status message", exc_info=True)
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖
@@ -189,16 +202,16 @@ def check_verification(func):
             except Exception as e:
                 logger.error(f"Error sending verification message in decorator: {e}")
                 await message.reply_text(
-                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE, @funnytamilan</i></b>\n"
-                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                    f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+                    f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
                 )
             return
             
         except Exception as e:
             logger.error(f"FATAL ERROR in check_verification decorator: {e}")
             await message.reply_text(
-                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE, @funnytami</i></b>\n"
-                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {str(e)}</blockquote>"
+                f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+                f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
             )
             return
     
@@ -342,8 +355,8 @@ async def not_joined(client: Client, message: Message):
                 except Exception as e:
                     print(f"Error with chat {chat_id}: {e}")
                     return await temp.edit(
-                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @ZENCURSE, @funnytamilan </i></b>\n"
-                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
+                        f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips </i></b>\n"
+                        f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
                     )
 
         try:
@@ -369,13 +382,10 @@ async def not_joined(client: Client, message: Message):
     except Exception as e:
         print(f"Final Error: {e}")
         await temp.edit(
-            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @seishiro_obito</i></b>\n"
-            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {e}</blockquote>"
+            f"<b><i>! Eʀʀᴏʀ, Cᴏɴᴛᴀᴄᴛ ᴅᴇᴠᴇʟᴏᴘᴇʀ ᴛᴏ sᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇs @CodeRips</i></b>\n"
+            f"<blockquote expandable><b>Rᴇᴀsᴏɴ:</b> {html.escape(str(e))}</blockquote>"
         )
         
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
 active_sequences = {}
 message_ids = {}
 renaming_operations = {}
@@ -392,28 +402,8 @@ def detect_quality(file_name):
 # --- Duration Detection Function (from the first bot) ---
 async def detect_duration(file_path):
     """Detect the duration of a video or audio file using ffprobe."""
-    ffprobe = shutil.which('ffprobe')
-    if not ffprobe:
-        logger.error("ffprobe not found in PATH")
-        raise RuntimeError("ffprobe not found in PATH")
-
-    cmd = [
-        ffprobe,
-        '-v', 'quiet',
-        '-print_format', 'json',
-        '-show_format',
-        file_path
-    ]
-
-    process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    stdout, stderr = await process.communicate()
-
     try:
-        info = json.loads(stdout)
+        info = await probe_media(file_path)
         format_info = info.get('format', {})
         duration = float(format_info.get('duration', 0))
         return duration
@@ -803,18 +793,25 @@ async def auto_rename_files(client, message, force=False):
             template = re.sub(r'\{\s*\}', '', template)
 
             _, file_extension = os.path.splitext(file_name)
+            source_extension = file_extension.lower()
 
             # Remux only when metadata is enabled. Otherwise, keep the original
             # container so a rename-only job stays a fast, low-disk operation.
-            if metadata_enabled and file_extension.lower() in ['.mp4', '.m4v']:
+            if metadata_enabled and source_extension in {".mp4", ".m4v"}:
                 final_extension = ".mkv"
             else:
-                final_extension = file_extension
+                final_extension = file_extension or (
+                    ".mp3" if media_type == "audio" else ".mkv"
+                )
 
             if not final_extension.startswith('.'):
-                final_extension = '.' + final_extension if file_extension else ''
+                final_extension = f".{final_extension}"
     
-            new_file_name = f"{template}{final_extension}"
+            new_file_name = safe_filename(
+                template,
+                final_extension,
+                fallback="CodeRips_Renamed",
+            )
             user_folder = str(user_id)
             # Every job gets its own directory. Pyrogram creates a `.temp`
             # sibling during downloads; a unique directory prevents retries
@@ -838,18 +835,21 @@ async def auto_rename_files(client, message, force=False):
                     progress_args=("Dᴏᴡɴʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
                 )
             except Exception as e:
-                await msg.edit(f"Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}")
+                logger.exception("Download failed for user %s", user_id)
+                await _safe_edit(msg, "❌ Download failed. Please try the file again.")
                 raise
 
-            if metadata_enabled and file_extension.lower() in ['.mp4', '.m4v']:
-                await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
+            if metadata_enabled and source_extension in {".mp4", ".m4v"}:
+                await _safe_edit(msg, "MP4 detected. Preparing MKV with CodeRips metadata...")
                 await message.reply_chat_action(ChatAction.PLAYING)
                 try:
-                    await convert_to_mkv(file_path, metadata_path, user_id)
-                    file_path = metadata_path
+                    file_path = await convert_to_mkv(file_path, metadata_path, user_id)
                 except Exception as e:
-                    await msg.edit(f"❌ Eʀʀᴏʀ Dᴜʀɪɴɢ ᴄᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ ᴍᴋᴠ... {str(e)}")
-                    return
+                    logger.exception("MP4 to MKV conversion failed for user %s", user_id)
+                    await _safe_edit(
+                        msg,
+                        "⚠️ Metadata conversion failed; uploading the original media.",
+                    )
 
             # Detect duration for video or audio files
             duration = 0
@@ -862,14 +862,24 @@ async def auto_rename_files(client, message, force=False):
             human_readable_duration = convert(duration) if duration > 0 else "N/A"
             
             # Only add metadata if not already converted (to avoid double processing)
-            if metadata_enabled and file_extension.lower() not in ['.mp4', '.m4v']:
-                await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
+            if metadata_enabled and source_extension not in {".mp4", ".m4v"}:
+                await _safe_edit(msg, "Adding CodeRips metadata...")
                 await message.reply_chat_action(ChatAction.PLAYING)
                 try:
-                    await add_metadata(file_path, metadata_path, user_id)
-                    file_path = metadata_path
+                    file_path = await add_metadata(file_path, metadata_path, user_id)
                 except Exception as e:
-                    logger.error(f"Failed to add metadata: {e}")
+                    logger.exception("Failed to add metadata for user %s", user_id)
+                    await _safe_edit(
+                        msg,
+                        "⚠️ Metadata could not be applied; uploading the original media.",
+                    )
+
+            # Only rename after processing succeeds. The Telegram upload then
+            # always contains the requested filename, not metadata.mkv/output.mkv.
+            final_path = os.path.join(job_dir, new_file_name)
+            if os.path.realpath(file_path) != os.path.realpath(final_path):
+                os.replace(file_path, final_path)
+            file_path = final_path
 
             await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
             await message.reply_chat_action(ChatAction.PLAYING)
@@ -894,7 +904,11 @@ async def auto_rename_files(client, message, force=False):
 
             ph_path = None
             if c_thumb:
-                ph_path = await client.download_media(c_thumb)
+                try:
+                    ph_path = await client.download_media(c_thumb)
+                except Exception:
+                    logger.warning("Configured thumbnail could not be downloaded", exc_info=True)
+                    ph_path = None
             elif media_type == "video" and message.video and message.video.thumbs:
                 try:
                     ph_path = await client.download_media(message.video.thumbs[0].file_id)
@@ -913,13 +927,15 @@ async def auto_rename_files(client, message, force=False):
             common_upload_params = {
                 'chat_id': message.chat.id,
                 'caption': caption,
+                'parse_mode': None,
                 'thumb': ph_path,
                 'progress': progress_for_pyrogram,
                 'progress_args': ("Uᴘʟᴏᴀᴅ sᴛᴀʀᴛᴇᴅ ᴅᴜᴅᴇ...!!", msg, time.time())
             }
 
             sent_message = None
-            if media_type == "document":
+            upload_extension = os.path.splitext(file_path)[1].lower()
+            if media_type == "document" or upload_extension not in {".mp4", ".m4v", ".webm"}:
                 sent_message = await client.send_document(document=file_path, **common_upload_params)
             elif media_type == "video":
                 if duration > 0:
@@ -952,26 +968,26 @@ async def auto_rename_files(client, message, force=False):
                         f"Tɪᴍᴇ: {current_time}\n"
                         f"Oʀɪɢɪɴᴀʟ Fɪʟᴇɴᴀᴍᴇ: {file_name}\n"
                         f"Rᴇɴᴀᴍᴇᴅ Fɪʟᴇɴᴀᴍᴇ: {new_file_name}"
-                        f"any issues dm : @funnytamilan,@ZENCURSE"
+                        f"Support: @CodeRips"
                         
                     )
                     
                     dump_channel = Config.DUMP_CHANNEL
-                    if media_type == "document" and sent_message.document:
+                    if sent_message and sent_message.document:
                         await client.send_document(
                             chat_id=dump_channel,
                             document=sent_message.document.file_id,
                             thumb=ph_path,
                             caption=dump_caption
                         )
-                    elif media_type == "video" and sent_message.video:
+                    elif sent_message and sent_message.video:
                         await client.send_video(
                             chat_id=dump_channel,
                             video=sent_message.video.file_id,
                             thumb=ph_path,
                             caption=dump_caption
                         )
-                    elif media_type == "audio" and sent_message.audio:
+                    elif sent_message and sent_message.audio:
                         await client.send_audio(
                             chat_id=dump_channel,
                             audio=sent_message.audio.file_id,
@@ -998,11 +1014,15 @@ async def auto_rename_files(client, message, force=False):
             except Exception as e:
                 logger.error(f"Failed to update database: {e}")
                     
-            await msg.delete()
+            try:
+                await msg.delete()
+            except Exception:
+                logger.debug("Unable to delete completed status message", exc_info=True)
 
         except Exception as e:
-            await msg.edit(f"❌ Eʀʀᴏʀ ᴅᴜʀɪɴɢ ʀᴇɴᴀᴍɪɴɢ: {str(e)}")
-            raise
+            logger.exception("Rename operation failed for user %s", getattr(message.from_user, "id", "unknown"))
+            detail = html.escape(str(e).strip()[:500] or "unknown error")
+            await _safe_edit(msg, f"❌ Rename failed:\n<code>{detail}</code>")
         finally:
             # Clean up files
             for path in [download_path, metadata_path, output_path, input_path, ph_path if "ph_path" in locals() else None]:
@@ -1107,73 +1127,72 @@ async def end_sequence(client, message: Message):
             print(f"Error deleting messages: {e}")
 
 async def add_metadata(input_path, output_path, user_id):
-    ffmpeg_cmd = shutil.which('ffmpeg')
+    ffmpeg_cmd = shutil.which("ffmpeg")
     if not ffmpeg_cmd:
-        raise RuntimeError("FFmpeg not found in PATH")
-
-    metadata_command = [
-        ffmpeg_cmd,
-        '-i', input_path,
-        '-metadata', f'title={await rexbots.get_title(user_id)}',
-        '-metadata', f'artist={await rexbots.get_artist(user_id)}',
-        '-metadata', f'author={await rexbots.get_author(user_id)}',
-        '-metadata:s:v', f'title={await rexbots.get_video(user_id)}',
-        '-metadata:s:a', f'title={await rexbots.get_audio(user_id)}',
-        '-metadata:s:s', f'title={await rexbots.get_subtitle(user_id)}',
-        '-metadata', f'encoded_by={await rexbots.get_encoded_by(user_id)}',
-        '-metadata', f'custom_tag={await rexbots.get_custom_tag(user_id)}',
-        '-map', '0',
-        '-c', 'copy',
-        '-loglevel', 'error',
-        '-y',
-        output_path
+        raise RuntimeError("FFmpeg is not installed on the server")
+    info = await probe_media(input_path)
+    values = await metadata_values(rexbots, user_id)
+    common = [
+        ffmpeg_cmd, "-hide_banner", "-loglevel", "error",
+        "-i", input_path,
+        "-map_metadata", "0",
+        "-c", "copy",
+        *metadata_args(values, info.get("streams")),
+        "-y", output_path,
     ]
-
-    process = await asyncio.create_subprocess_exec(
-        *metadata_command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    _, stderr = await process.communicate()
-
-    if process.returncode != 0:
-        raise RuntimeError(f"FFmpeg error: {stderr.decode()}")
+    try:
+        return await run_ffmpeg(common[:], output_path, label="FFmpeg metadata remux")
+    except Exception as first_error:
+        # Some containers contain data streams that cannot be copied into the
+        # target container. Retry with the standard media streams only.
+        fallback = [
+            ffmpeg_cmd, "-hide_banner", "-loglevel", "error",
+            "-i", input_path,
+            "-map", "0:v?", "-map", "0:a?", "-map", "0:s?",
+            "-map_metadata", "0",
+            "-c", "copy",
+            *metadata_args(values, info.get("streams")),
+            "-y", output_path,
+        ]
+        try:
+            return await run_ffmpeg(fallback, output_path, label="FFmpeg metadata remux")
+        except Exception as second_error:
+            raise RuntimeError(f"Metadata remux failed: {second_error}") from first_error
 
 async def convert_to_mkv(input_path, output_path, user_id):
-    """Convert video file to MKV format"""
-    ffmpeg_cmd = shutil.which('ffmpeg')
+    """Remux to MKV with metadata, retrying without unsupported data streams."""
+    ffmpeg_cmd = shutil.which("ffmpeg")
     if not ffmpeg_cmd:
-        raise RuntimeError("FFmpeg not found in PATH")
-
-    metadata_add_cmd = [
-        ffmpeg_cmd,
-        '-hide_banner',
-        '-i', input_path,
-        '-metadata', f'title={await rexbots.get_title(user_id)}',
-        '-metadata', f'artist={await rexbots.get_artist(user_id)}',
-        '-metadata', f'author={await rexbots.get_author(user_id)}',
-        '-metadata:s:v', f'title={await rexbots.get_video(user_id)}',
-        '-metadata:s:a', f'title={await rexbots.get_audio(user_id)}',
-        '-metadata:s:s', f'title={await rexbots.get_subtitle(user_id)}',
-        '-metadata', f'encoded_by={await rexbots.get_encoded_by(user_id)}',
-        '-metadata', f'custom_tag={await rexbots.get_custom_tag(user_id)}',
-        '-map', '0',
-        '-c', 'copy',
-        '-f', 'matroska',
-        '-y',
-        output_path
+        raise RuntimeError("FFmpeg is not installed on the server")
+    info = await probe_media(input_path)
+    values = await metadata_values(rexbots, user_id)
+    common = [
+        ffmpeg_cmd, "-hide_banner", "-loglevel", "error",
+        "-i", input_path,
+        "-map", "0",
+        "-map_metadata", "0",
+        "-c", "copy",
+        *metadata_args(values, info.get("streams")),
+        "-f", "matroska",
+        "-y", output_path,
     ]
-
-    process = await asyncio.create_subprocess_exec(
-        *metadata_add_cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    _, stderr = await process.communicate()
-
-    if process.returncode != 0:
-        error_msg = stderr.decode().strip()
-        raise RuntimeError(f"MKV conversion failed: {error_msg}")
+    try:
+        return await run_ffmpeg(common[:], output_path, label="FFmpeg MKV remux")
+    except Exception as first_error:
+        fallback = [
+            ffmpeg_cmd, "-hide_banner", "-loglevel", "error",
+            "-i", input_path,
+            "-map", "0:v?", "-map", "0:a?", "-map", "0:s?",
+            "-map_metadata", "0",
+            "-c", "copy",
+            *metadata_args(values, info.get("streams")),
+            "-f", "matroska",
+            "-y", output_path,
+        ]
+        try:
+            return await run_ffmpeg(fallback, output_path, label="FFmpeg MKV remux")
+        except Exception as second_error:
+            raise RuntimeError(f"MKV remux failed: {second_error}") from first_error
 
 
 # ----------------------------------------

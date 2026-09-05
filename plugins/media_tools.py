@@ -6,10 +6,9 @@ the final upload.
 """
 
 import asyncio
-import json
+import html
 import logging
 import os
-import re
 import shutil
 import tempfile
 import uuid
@@ -20,6 +19,14 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from config import Config
 from helper.database import rexbots
 from helper.utils import humanbytes, progress_for_pyrogram
+from helper.media import (
+    MediaCommandError,
+    metadata_args,
+    metadata_values,
+    probe_media,
+    run_ffmpeg,
+    safe_filename,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +34,6 @@ MEDIA_STATE = {}
 MEDIA_TIMEOUT = 30 * 60
 MAX_MEDIA_SESSIONS = 256
 MEDIA_ROOT = os.path.abspath(os.environ.get("MEDIA_JOB_DIR", os.path.join(tempfile.gettempdir(), "telegram-rename-media")))
-MEDIA_EXTENSIONS = {
-    ".mp4", ".mkv", ".webm", ".avi", ".mov", ".m4v", ".ts",
-    ".m2ts", ".mp3", ".m4a", ".flac", ".wav", ".ogg",
-}
-
-
 def _button(text, data):
     return InlineKeyboardButton(text, callback_data=data)
 
@@ -50,6 +51,7 @@ def _menu_keyboard(state):
          _button("📺 Subtitle Tracks", _callback(state, "subtitle"))],
         [_button("🎬 Video Tracks", _callback(state, "video")),
          _button("🗑 Remove Stream", _callback(state, "remove"))],
+        [_button("⚙️ Encode + Rename", _callback(state, "encode"))],
         [_button("❌ Cancel", _callback(state, "cancel"))],
     ])
 
@@ -139,31 +141,7 @@ def _source_details(message):
 
 
 async def _probe(path):
-    ffprobe = shutil.which("ffprobe")
-    if not ffprobe:
-        raise RuntimeError("FFprobe is not installed on the server")
-    command = [
-        ffprobe, "-v", "error", "-print_format", "json",
-        "-show_streams", "-show_format", path,
-    ]
-    process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    try:
-        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=120)
-    except asyncio.TimeoutError:
-        process.kill()
-        await process.wait()
-        raise RuntimeError("FFprobe timed out")
-    if process.returncode != 0:
-        reason = stderr.decode(errors="replace").strip()[-500:]
-        raise RuntimeError(f"FFprobe failed: {reason or 'unsupported or corrupted media'}")
-    try:
-        return json.loads(stdout.decode())
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("FFprobe returned invalid media information") from exc
+    return await probe_media(path)
 
 
 async def _ensure_analyzed(client, query, state):
@@ -200,6 +178,9 @@ async def _ensure_analyzed(client, query, state):
         raise
 
     streams = info.get("streams") or []
+    if not streams:
+        await asyncio.to_thread(shutil.rmtree, job_dir, True)
+        raise MediaCommandError("FFprobe found no playable audio, video, or subtitle streams")
     state.update(
         job_dir=job_dir,
         source_path=downloaded,
@@ -273,8 +254,12 @@ def _info_text(state):
         if stream.get("width") and stream.get("height"):
             details.append(f"{stream['width']}x{stream['height']}")
         if tags.get("language"):
-            details.append(tags["language"])
-        lines.append(f"• <b>{stream.get('codec_type', 'data').title()}</b>: " + " — ".join(details))
+            details.append(html.escape(str(tags["language"])))
+        safe_details = [html.escape(str(detail)) for detail in details]
+        lines.append(
+            f"• <b>{html.escape(str(stream.get('codec_type', 'data')).title())}</b>: "
+            + " — ".join(safe_details)
+        )
     duration = (state.get("format_info") or {}).get("duration")
     if duration:
         lines.append(f"\nDuration: {duration}s")
@@ -282,28 +267,7 @@ def _info_text(state):
 
 
 def _safe_output_name(raw, extension):
-    """Return a portable basename, retaining the explicitly selected extension."""
-    extension = re.sub(r"[^A-Za-z0-9.]", "", extension or ".mkv")
-    if not extension.startswith("."):
-        extension = "." + extension
-    if extension == ".":
-        extension = ".mkv"
-    name = os.path.basename((raw or "").strip())
-    name = re.sub(r"[\x00-\x1f<>:\"/\\\\|?*]", " ", name)
-    name = re.sub(r"\s+", " ", name).strip(" .")
-    while os.path.splitext(name)[1].lower() in MEDIA_EXTENSIONS:
-        name = os.path.splitext(name)[0].strip(" .")
-    if not name:
-        name = "renamed_media"
-    if name.upper() in {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4",
-                        "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3",
-                        "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}:
-        name = f"_{name}"
-    # Filesystems commonly cap a component at 255 UTF-8 bytes.
-    budget = 240 - len(extension.encode("utf-8"))
-    encoded = name.encode("utf-8")[:max(budget, 1)]
-    name = encoded.decode("utf-8", "ignore").rstrip(" .") or "renamed_media"
-    return f"{name}{extension}"
+    return safe_filename(raw, extension, fallback="CodeRips_Renamed")
 
 
 def _inside_job(job_dir, path):
@@ -313,7 +277,7 @@ def _inside_job(job_dir, path):
 async def _remux(state, action, stream_index):
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
-        raise RuntimeError("FFmpeg is not installed on the server")
+        raise MediaCommandError("FFmpeg is not installed on the server")
     source_path = state["source_path"]
     # Matroska accepts arbitrary copied audio/subtitle/video layouts.
     extension = ".mkv"
@@ -330,26 +294,71 @@ async def _remux(state, action, stream_index):
     else:
         raise RuntimeError("Unknown stream action")
 
+    values = await metadata_values(rexbots, state["source_message"].from_user.id)
     command = [
         ffmpeg, "-hide_banner", "-loglevel", "error", "-i", source_path,
-        *maps, "-map_metadata", "0", "-c", "copy", "-y", output_path,
+        *maps,
+        "-map_metadata", "0",
+        "-c", "copy",
+        *metadata_args(values, state.get("streams")),
+        "-f", "matroska",
+        "-y", output_path,
     ]
-    process = await asyncio.create_subprocess_exec(
-        *command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
     try:
-        _, stderr = await asyncio.wait_for(process.communicate(), timeout=MEDIA_TIMEOUT)
-    except asyncio.TimeoutError:
-        process.kill()
-        await process.wait()
-        if os.path.exists(output_path):
-            os.unlink(output_path)
-        raise RuntimeError("FFmpeg processing timed out")
-    if process.returncode != 0 or not os.path.isfile(output_path):
-        reason = stderr.decode(errors="replace").strip()[-700:]
-        raise RuntimeError(f"FFmpeg remux failed: {reason or 'unsupported stream layout'}")
+        await run_ffmpeg(command, output_path, label="FFmpeg remux")
+    except Exception as first_error:
+        # Attachments/data streams are not accepted by every Matroska build.
+        # Retry with the normal media stream classes before showing an error.
+        if action == "remove":
+            fallback_maps = ["-map", "0:v?", "-map", "0:a?", "-map", "0:s?",
+                             "-map", f"-0:{stream_index}"]
+        elif action == "audio":
+            fallback_maps = ["-map", "0:v?", "-map", f"0:{stream_index}", "-map", "0:s?"]
+        elif action == "subtitle":
+            fallback_maps = ["-map", "0:v?", "-map", "0:a?", "-map", f"0:{stream_index}"]
+        else:
+            fallback_maps = ["-map", f"0:{stream_index}", "-map", "0:a?", "-map", "0:s?"]
+        fallback = [
+            ffmpeg, "-hide_banner", "-loglevel", "error", "-i", source_path,
+            *fallback_maps, "-map_metadata", "0", "-c", "copy",
+            *metadata_args(values, state.get("streams")),
+            "-f", "matroska", "-y", output_path,
+        ]
+        try:
+            await run_ffmpeg(fallback, output_path, label="FFmpeg remux")
+        except Exception as second_error:
+            raise MediaCommandError(f"Remux failed after fallback: {second_error}") from first_error
+    await _probe(output_path)
+    return output_path
+
+
+async def _encode(state):
+    """Encode to a compatible MKV while preserving all supported tracks."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise MediaCommandError("FFmpeg is not installed on the server")
+
+    output_path = os.path.join(state["job_dir"], "encoded.mkv")
+    command = [
+        ffmpeg, "-hide_banner", "-loglevel", "error", "-i", state["source_path"],
+        "-map", "0:v:0?",
+        "-map", "0:a?",
+        "-map", "0:s?",
+        "-map_metadata", "0",
+        "-c:v", "libx264",
+        "-preset", os.environ.get("ENCODE_PRESET", "veryfast"),
+        "-crf", os.environ.get("ENCODE_CRF", "23"),
+        "-c:a", "aac",
+        "-b:a", os.environ.get("ENCODE_AUDIO_BITRATE", "192k"),
+        "-c:s", "copy",
+        *metadata_args(
+            await metadata_values(rexbots, state["source_message"].from_user.id),
+            state.get("streams"),
+        ),
+        "-f", "matroska",
+        "-y", output_path,
+    ]
+    await run_ffmpeg(command, output_path, label="FFmpeg encode")
     await _probe(output_path)
     return output_path
 
@@ -393,10 +402,13 @@ async def _ask_and_upload(client, query, state, processed_path):
     upload_args = {
         "chat_id": query.message.chat.id,
         "caption": caption,
+        "parse_mode": None,
         "progress": progress_for_pyrogram,
         "progress_args": ("📤 Uploading...", status, asyncio.get_running_loop().time()),
     }
-    if any(s.get("codec_type") == "video" for s in state.get("streams", [])):
+    if extension in {".mp4", ".m4v", ".webm"} and any(
+        s.get("codec_type") == "video" for s in state.get("streams", [])
+    ):
         await client.send_video(video=final_path, **upload_args)
     else:
         await client.send_document(document=final_path, **upload_args)
@@ -426,7 +438,8 @@ async def handle_media_callback(client, query):
             return await _handle_media_action(client, query, state, action, args)
     except Exception as exc:
         logger.exception("Media operation failed for user %s", query.from_user.id)
-        await _fail(query, "The media operation could not be completed.")
+        detail = html.escape(str(exc).strip()[:500] or "unknown error")
+        await _fail(query, f"Media operation failed:\n<code>{detail}</code>")
 
 
 async def _handle_media_action(client, query, state, action, args):
@@ -485,4 +498,14 @@ async def _handle_media_action(client, query, state, action, args):
             MEDIA_STATE.pop(query.from_user.id, None)
             await _cleanup_state(state)
             return await query.message.edit_text(f"✅ Completed: <code>{name}</code>")
+        if action == "encode":
+            state["processing"] = True
+            await query.message.edit_text(
+                "⚙️ Encoding media with H.264/AAC and applying CodeRips metadata..."
+            )
+            processed = await _encode(state)
+            name = await _ask_and_upload(client, query, state, processed)
+            MEDIA_STATE.pop(query.from_user.id, None)
+            await _cleanup_state(state)
+            return await query.message.edit_text(f"✅ Encode completed: <code>{name}</code>")
         return await query.message.edit_text("⚠️ Unknown media action.", reply_markup=_menu_keyboard(state))

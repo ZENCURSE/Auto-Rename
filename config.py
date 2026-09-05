@@ -33,13 +33,15 @@ class Config(object):
     WORKERS = max(1, min(_int_env("WORKERS", 100), 200))
     RENAME_CONCURRENCY = max(1, min(_int_env("RENAME_CONCURRENCY", 2), 8))
     MAX_FILE_SIZE = _int_env("MAX_FILE_SIZE", 4 * 1024 ** 3)
+    FFPROBE_TIMEOUT = max(10, _int_env("FFPROBE_TIMEOUT", 120))
+    FFMPEG_TIMEOUT = max(30, _int_env("FFMPEG_TIMEOUT", 1800))
 
     # database config
     DB_NAME = os.environ.get("DB_NAME", "auto_rename")
     DB_URL  = os.environ.get("DB_URL", "")
  
     # other configs
-    ADMIN_URL = "https://t.me/ZENCURSE"
+    ADMIN_URL = os.environ.get("ADMIN_URL", "https://t.me/CodeRips")
     DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002543362757")
     DUMP = True
     BOT_UPTIME  = time.time()
@@ -91,7 +93,7 @@ class Config(object):
 <b>‣ /Autorename: ʀᴇɴᴀᴍᴇ ʏᴏᴜʀ ᴍᴇᴅɪᴀ ꜰɪʟᴇꜱ ʙʏ ɪɴᴄʟᴜᴅɪɴɢ 'ᴇᴘɪꜱᴏᴅᴇ' ᴀɴᴅ 'ǫᴜᴀʟɪᴛʏ' ᴠᴀʀɪᴀʙʟᴇꜱ ɪɴ ʏᴏᴜʀ ᴛᴇxᴛ, ᴛᴏ ᴇxᴛʀᴀᴄᴛ ᴇᴘɪꜱᴏᴅᴇ ᴀɴᴅ ǫᴜᴀʟɪᴛʏ ᴘʀᴇꜱᴇɴᴛ ɪɴ ᴛʜᴇ ᴏʀɪɢɪɴᴀʟ ꜰɪʟᴇɴᴀᴍᴇ.</b> """
     
     ABOUT_TXT = f"""<b><blockquote expandable>❍ <u>ᴍʏ ɴᴀᴍᴇ</u> : <b><i>ᴀᴜᴛᴏ ʀᴇɴᴀᴍᴇ</i></b>
-❍ ᴅᴇᴠᴇʟᴏᴩᴇʀ : <a href="https://t.me/ZENCURSE">ᴄʟɪᴄᴋ ʜᴇʀᴇ</a>
+❍ ᴅᴇᴠᴇʟᴏᴩᴇʀ : <a href="https://t.me/CodeRips">ᴄʟɪᴄᴋ ʜᴇʀᴇ</a>
 ❍ ʟᴀɴɢᴜᴀɢᴇ : <a href="https://www.python.org/">ᴄʟɪᴄᴋ ʜᴇʀᴇ</a>
 ❍ ᴅᴀᴛᴀʙᴀꜱᴇ : <a href="https://www.mongodb.com/">ᴄʟɪᴄᴋ ʜᴇʀᴇ</a>
 ❍ ʜᴏꜱᴛᴇᴅ ᴏɴ : <a href="https://t.me/CodeRips">ᴄʟɪᴄᴋ ʜᴇʀᴇ</a>
