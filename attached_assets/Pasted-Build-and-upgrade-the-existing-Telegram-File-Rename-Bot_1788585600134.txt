@@ -1,0 +1,271 @@
+Build and upgrade the existing Telegram File Rename Bot with a clean, production-ready architecture.
+
+1. Advanced File Rename
+
+When a user sends/selects a Document or Video, show an inline menu with:
+
+- ✏️ Rename File
+- 🎵 Audio Tracks
+- 📺 Subtitle Tracks
+- 🎬 Video Track / Stream
+- ℹ️ Media Info
+- ❌ Cancel
+
+The existing UI/UX and working features must NOT be broken.
+
+2. Multi-Audio Track Selection
+
+When the user selects a video/document containing multiple audio streams:
+
+1. Analyze the media using FFprobe.
+2. Detect all available audio streams.
+3. Display every audio track as an inline button.
+
+Example:
+
+🎵 Audio Tracks
+
+"🇬🇧 English"
+"🇮🇳 Tamil"
+"🇮🇳 Hindi"
+"🇯🇵 Japanese"
+
+Each button should contain the actual stream index/language information.
+
+When the user selects an audio track:
+
+- Keep ONLY the selected audio stream.
+- Remove unwanted audio streams.
+- Preserve the original video stream.
+- Preserve subtitles unless the user chooses otherwise.
+- Remux without unnecessary re-encoding whenever possible.
+- Then send the processed file to the user.
+
+Example:
+
+"🎵 Tamil Audio Selected"
+
+"🎬 Video + Tamil Audio"
+
+3. Stream Remove Feature
+
+Add a new 🗑 Remove Stream feature.
+
+After selecting a video/document, detect:
+
+- Video streams
+- Audio streams
+- Subtitle streams
+- Other supported streams
+
+Display them using inline buttons.
+
+Example:
+
+🗑 Remove Stream
+
+"🎥 Video 1"
+"🎵 English"
+"🎵 Tamil"
+"🎵 Hindi"
+"💬 English Subtitle"
+"💬 Tamil Subtitle"
+
+The user can select the stream they want to remove.
+
+After confirmation:
+
+"✅ Stream removed successfully"
+
+Then process the media and return the modified file.
+
+4. Stream Selection Before Download/Processing
+
+IMPORTANT:
+
+If the Telegram file contains media with multiple audio tracks, the bot should inspect the media and show the available audio tracks before final processing/download whenever technically possible.
+
+The user should be able to select:
+
+"🎵 Tamil"
+
+or
+
+"🎵 English"
+
+or
+
+"🎵 Hindi"
+
+Then the resulting downloaded/generated file should contain the selected audio track.
+
+Do NOT simply show generic buttons. Buttons must represent the actual streams detected from the selected media.
+
+5. Inline UI
+
+Use Telegram InlineKeyboardMarkup.
+
+Example:
+
+"🎵 Audio Tracks"
+
+"[ 🇮🇳 Tamil ] [ 🇬🇧 English ]"
+
+"[ 🇮🇳 Hindi ] [ 🇯🇵 Japanese ]"
+
+"[ 🔙 Back ]"
+
+After selection:
+
+"Selected: Tamil"
+
+"[ ✅ Confirm ] [ ❌ Cancel ]"
+
+For stream removal:
+
+"🗑 Remove Stream"
+
+"[ 🎵 Tamil ]"
+"[ 🎵 English ]"
+"[ 💬 English Subs ]"
+
+6. FFprobe Detection
+
+Use FFprobe to accurately detect:
+
+- stream index
+- codec
+- codec type
+- language
+- title
+- default disposition
+- forced disposition
+- channels
+- sample rate
+- bitrate
+- resolution
+- FPS
+
+Handle missing language metadata gracefully.
+
+If language is unavailable, display:
+
+"Audio 1 — AAC — 2ch"
+
+instead of crashing.
+
+7. FFmpeg Processing
+
+For stream selection/removal, prefer stream-copy/remuxing instead of re-encoding.
+
+Examples of desired behavior:
+
+- Audio selection → map selected audio + video.
+- Audio removal → map all streams except selected stream.
+- Subtitle removal → exclude subtitle streams.
+- Preserve metadata when possible.
+- Preserve filename extension correctly.
+- Avoid quality loss whenever possible.
+
+If remuxing is impossible because of the container/codec combination, gracefully fall back to an appropriate conversion.
+
+8. File Rename Flow
+
+After processing/stream selection:
+
+Ask the user for the new filename.
+
+Example:
+
+"📁 Send the new filename:"
+
+User:
+
+"My Movie Tamil"
+
+Bot generates:
+
+"My Movie Tamil.mkv"
+
+Do not accidentally create:
+
+"My Movie Tamil.mkv.mp4"
+
+Correctly preserve the appropriate extension.
+
+9. Progress & Status
+
+Show useful status messages:
+
+"🔍 Analyzing media..."
+
+"🎵 Found 3 audio tracks"
+
+"⚙️ Processing..."
+
+"📤 Uploading..."
+
+"✅ Completed"
+
+Delete temporary status messages where appropriate.
+
+10. Error Handling
+
+Handle:
+
+- No audio streams
+- No video streams
+- FFprobe failure
+- FFmpeg failure
+- Unsupported container
+- Corrupted media
+- File not found
+- Telegram download failure
+- Telegram upload failure
+- User cancellation
+- Timeout
+- Large files
+
+Never crash the bot because of one invalid media file.
+
+11. Important Compatibility
+
+Do NOT rewrite the entire project unnecessarily.
+
+Before modifying code:
+
+1. Inspect the existing project architecture.
+2. Identify current download/upload functions.
+3. Identify current rename implementation.
+4. Identify callback handlers.
+5. Identify FFmpeg/FFprobe utilities.
+6. Reuse existing functions where possible.
+7. Add the new features modularly.
+
+Do NOT change unrelated UI/UX, commands, database structure, or existing functionality unless required.
+
+12. Production Quality
+
+Implement:
+
+- Proper async handling
+- Per-user processing state
+- Callback query validation
+- Temporary-file cleanup
+- Unique temporary directories
+- Concurrent processing limits
+- Timeout handling
+- Proper logging
+- Graceful cancellation
+- Memory-efficient processing
+- Large-file support
+
+All callback buttons must be generated dynamically from the actual media streams.
+
+Final Goal
+
+The final bot should provide this workflow:
+
+User → Select Document/Video → Analyze Media → Show Actual Streams → User Selects Audio/Stream → Remove/Keep Selected Stream → Rename File → Process → Upload Final File
+
+The feature must feel like a professional Telegram media utility, with a clean inline UI and reliable FFmpeg/FFprobe-based processing.

@@ -650,7 +650,7 @@ async def start_sequence(client, message: Message):
 @check_ban
 @check_verification
 @check_fsub
-async def auto_rename_files(client, message):
+async def auto_rename_files(client, message, force=False):
     """Main handler for auto-renaming files"""
     async with Semaphore:
         # Initialize variables at the start to avoid UnboundLocalError
@@ -716,6 +716,11 @@ async def auto_rename_files(client, message):
                 active_sequences[user_id].append(file_info)
                 reply_msg = await message.reply_text("Wᴇᴡ...ғɪʟᴇs ʀᴇᴄᴇɪᴠᴇᴅ ɴᴏᴡ ᴜsᴇ /end_sequence ᴛᴏ ɢᴇᴛ ʏᴏᴜʀ ғɪʟᴇs...!!")
                 message_ids[user_id].append(reply_msg.id)
+                return
+
+            if not force and (message.document or message.video):
+                from plugins.media_tools import show_media_menu
+                await show_media_menu(message)
                 return
 
             if media_preference in {"document", "video", "audio"}:

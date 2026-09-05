@@ -16,6 +16,7 @@ from helper.database import rexbots
 from config import Config
 from plugins.helper_func import *
 from plugins.Metadata import metadata_callback
+from plugins.media_tools import handle_media_callback
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖
@@ -49,6 +50,10 @@ async def cb_handler(client, query: CallbackQuery):
                     [[InlineKeyboardButton("📩 Contact Admin", url=Config.ADMIN_URL)]]
                 )
             )
+
+        if data.startswith("media_"):
+            await handle_media_callback(client, query)
+            return
 
         if data == "home":
             await query.message.edit_text(
