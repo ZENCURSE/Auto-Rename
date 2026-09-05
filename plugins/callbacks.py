@@ -51,7 +51,7 @@ async def cb_handler(client, query: CallbackQuery):
                 )
             )
 
-        if data.startswith("media_"):
+        if data.startswith("media:"):
             await handle_media_callback(client, query)
             return
 
@@ -156,7 +156,7 @@ async def cb_handler(client, query: CallbackQuery):
                         InlineKeyboardButton("Hᴏᴡ ᴛᴏ Sᴇᴛ Mᴇᴛᴀᴅᴀᴛᴀ...!!", callback_data="metainfo")
                     ],
                     [
-                        InlineKeyboardButton("Bᴀᴄᴋ", callback_data="start")
+                        InlineKeyboardButton("Bᴀᴄᴋ", callback_data="home")
                     ]
                 ])
             )

@@ -11,6 +11,7 @@ import logging
 import os
 import re
 import shutil
+import tempfile
 import uuid
 
 from pyrogram import filters
@@ -24,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 MEDIA_STATE = {}
 MEDIA_TIMEOUT = 30 * 60
+MAX_MEDIA_SESSIONS = 256
+MEDIA_ROOT = os.path.abspath(os.environ.get("MEDIA_JOB_DIR", os.path.join(tempfile.gettempdir(), "telegram-rename-media")))
 MEDIA_EXTENSIONS = {
     ".mp4", ".mkv", ".webm", ".avi", ".mov", ".m4v", ".ts",
     ".m2ts", ".mp3", ".m4a", ".flac", ".wav", ".ogg",
@@ -34,15 +37,20 @@ def _button(text, data):
     return InlineKeyboardButton(text, callback_data=data)
 
 
-def _menu_keyboard():
+def _callback(state, action, *parts):
+    """Build callback data bound to the session that created the menu."""
+    return ":".join(("media", state["nonce"], action, *map(str, parts)))
+
+
+def _menu_keyboard(state):
     return InlineKeyboardMarkup([
-        [_button("✏️ Rename File", "media_rename"),
-         _button("ℹ️ Media Info", "media_info")],
-        [_button("🎵 Audio Tracks", "media_audio"),
-         _button("📺 Subtitle Tracks", "media_subtitle")],
-        [_button("🎬 Video Tracks", "media_video"),
-         _button("🗑 Remove Stream", "media_remove")],
-        [_button("❌ Cancel", "media_cancel")],
+        [_button("✏️ Rename File", _callback(state, "rename")),
+         _button("ℹ️ Media Info", _callback(state, "info"))],
+        [_button("🎵 Audio Tracks", _callback(state, "audio")),
+         _button("📺 Subtitle Tracks", _callback(state, "subtitle"))],
+        [_button("🎬 Video Tracks", _callback(state, "video")),
+         _button("🗑 Remove Stream", _callback(state, "remove"))],
+        [_button("❌ Cancel", _callback(state, "cancel"))],
     ])
 
 
@@ -51,24 +59,47 @@ async def show_media_menu(message):
     old = MEDIA_STATE.pop(user_id, None)
     if old:
         await _cleanup_state(old)
-    MEDIA_STATE[user_id] = {
+    # Keep state bounded even if users never press a button.
+    await cleanup_expired_media_sessions()
+    if len(MEDIA_STATE) >= MAX_MEDIA_SESSIONS:
+        _, evicted = MEDIA_STATE.popitem()
+        await _cleanup_state(evicted)
+    state = {
         "source_message": message,
         "created_at": asyncio.get_running_loop().time(),
+        "nonce": uuid.uuid4().hex[:16],
+        "lock": asyncio.Lock(),
+        "processing": False,
     }
+    MEDIA_STATE[user_id] = state
     return await message.reply_text(
         "🎬 <b>Media actions</b>\n\n"
         "Choose an action. Stream buttons will be created from the actual "
         "audio, subtitle, and video tracks in your file.",
-        reply_markup=_menu_keyboard(),
+        reply_markup=_menu_keyboard(state),
     )
 
 
-def _state_for(query):
+async def cleanup_expired_media_sessions():
+    """Remove expired sessions and their private working directories."""
+    now = asyncio.get_running_loop().time()
+    expired = [
+        (user_id, state) for user_id, state in MEDIA_STATE.items()
+        if now - state["created_at"] > MEDIA_TIMEOUT
+    ]
+    for user_id, state in expired:
+        if MEDIA_STATE.get(user_id) is state:
+            MEDIA_STATE.pop(user_id, None)
+            await _cleanup_state(state)
+
+
+async def _state_for(query, nonce):
     state = MEDIA_STATE.get(query.from_user.id)
-    if not state:
+    if not state or state.get("nonce") != nonce:
         return None
     if asyncio.get_running_loop().time() - state["created_at"] > MEDIA_TIMEOUT:
         MEDIA_STATE.pop(query.from_user.id, None)
+        await _cleanup_state(state)
         return None
     source = state.get("source_message")
     if not source or source.chat.id != query.message.chat.id:
@@ -120,7 +151,12 @@ async def _probe(path):
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=120)
+    try:
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=120)
+    except asyncio.TimeoutError:
+        process.kill()
+        await process.wait()
+        raise RuntimeError("FFprobe timed out")
     if process.returncode != 0:
         reason = stderr.decode(errors="replace").strip()[-500:]
         raise RuntimeError(f"FFprobe failed: {reason or 'unsupported or corrupted media'}")
@@ -144,8 +180,9 @@ async def _ensure_analyzed(client, query, state):
         )
 
     await query.message.edit_text("🔍 Analyzing media and detecting streams...")
-    job_dir = os.path.join("media_jobs", str(query.from_user.id), uuid.uuid4().hex)
-    os.makedirs(job_dir, exist_ok=True)
+    os.makedirs(MEDIA_ROOT, mode=0o700, exist_ok=True)
+    job_dir = tempfile.mkdtemp(prefix=f"{query.from_user.id}-", dir=MEDIA_ROOT)
+    os.chmod(job_dir, 0o700)
     extension = os.path.splitext(details["file_name"])[1].lower() or ".bin"
     source_path = os.path.join(job_dir, f"source{extension}")
     try:
@@ -155,6 +192,8 @@ async def _ensure_analyzed(client, query, state):
         )
         if not downloaded or not os.path.isfile(downloaded):
             raise FileNotFoundError("Telegram download completed without a local file")
+        if os.path.getsize(downloaded) > Config.MAX_FILE_SIZE:
+            raise RuntimeError("Downloaded file exceeds the configured size limit")
         info = await _probe(downloaded)
     except Exception:
         await asyncio.to_thread(shutil.rmtree, job_dir, True)
@@ -202,8 +241,8 @@ def _stream_list(state, kind=None):
     return [s for s in streams if kind is None or s.get("codec_type") == kind]
 
 
-def _back_button():
-    return [_button("‹ Back", "media_back")]
+def _back_button(state):
+    return [_button("‹ Back", _callback(state, "back"))]
 
 
 async def _show_streams(query, state, kind, title, action):
@@ -215,9 +254,9 @@ async def _show_streams(query, state, kind, title, action):
     for stream in streams:
         rows.append([_button(
             _stream_label(stream),
-            f"media_pick:{action}:{stream.get('index')}",
+            _callback(state, "pick", action, stream.get("index")),
         )])
-    rows.append(_back_button())
+    rows.append(_back_button(state))
     await query.message.edit_text(title, reply_markup=InlineKeyboardMarkup(rows))
 
 
@@ -243,6 +282,12 @@ def _info_text(state):
 
 
 def _safe_output_name(raw, extension):
+    """Return a portable basename, retaining the explicitly selected extension."""
+    extension = re.sub(r"[^A-Za-z0-9.]", "", extension or ".mkv")
+    if not extension.startswith("."):
+        extension = "." + extension
+    if extension == ".":
+        extension = ".mkv"
     name = os.path.basename((raw or "").strip())
     name = re.sub(r"[\x00-\x1f<>:\"/\\\\|?*]", " ", name)
     name = re.sub(r"\s+", " ", name).strip(" .")
@@ -250,7 +295,19 @@ def _safe_output_name(raw, extension):
         name = os.path.splitext(name)[0].strip(" .")
     if not name:
         name = "renamed_media"
+    if name.upper() in {"CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4",
+                        "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3",
+                        "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}:
+        name = f"_{name}"
+    # Filesystems commonly cap a component at 255 UTF-8 bytes.
+    budget = 240 - len(extension.encode("utf-8"))
+    encoded = name.encode("utf-8")[:max(budget, 1)]
+    name = encoded.decode("utf-8", "ignore").rstrip(" .") or "renamed_media"
     return f"{name}{extension}"
+
+
+def _inside_job(job_dir, path):
+    return os.path.commonpath((os.path.realpath(job_dir), os.path.realpath(path))) == os.path.realpath(job_dir)
 
 
 async def _remux(state, action, stream_index):
@@ -258,7 +315,8 @@ async def _remux(state, action, stream_index):
     if not ffmpeg:
         raise RuntimeError("FFmpeg is not installed on the server")
     source_path = state["source_path"]
-    extension = os.path.splitext(state["source_name"])[1].lower() or ".mkv"
+    # Matroska accepts arbitrary copied audio/subtitle/video layouts.
+    extension = ".mkv"
     output_path = os.path.join(state["job_dir"], f"processed{extension}")
 
     if action == "remove":
@@ -281,10 +339,18 @@ async def _remux(state, action, stream_index):
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    _, stderr = await asyncio.wait_for(process.communicate(), timeout=MEDIA_TIMEOUT)
+    try:
+        _, stderr = await asyncio.wait_for(process.communicate(), timeout=MEDIA_TIMEOUT)
+    except asyncio.TimeoutError:
+        process.kill()
+        await process.wait()
+        if os.path.exists(output_path):
+            os.unlink(output_path)
+        raise RuntimeError("FFmpeg processing timed out")
     if process.returncode != 0 or not os.path.isfile(output_path):
         reason = stderr.decode(errors="replace").strip()[-700:]
         raise RuntimeError(f"FFmpeg remux failed: {reason or 'unsupported stream layout'}")
+    await _probe(output_path)
     return output_path
 
 
@@ -307,6 +373,8 @@ async def _ask_and_upload(client, query, state, processed_path):
         raise RuntimeError("Operation cancelled")
     output_name = _safe_output_name(raw_name, extension)
     final_path = os.path.join(state["job_dir"], output_name)
+    if not _inside_job(state["job_dir"], final_path):
+        raise RuntimeError("Invalid output filename")
     os.replace(processed_path, final_path)
 
     caption_template = await rexbots.get_caption(query.from_user.id)
@@ -328,7 +396,7 @@ async def _ask_and_upload(client, query, state, processed_path):
         "progress": progress_for_pyrogram,
         "progress_args": ("📤 Uploading...", status, asyncio.get_running_loop().time()),
     }
-    if state["source_kind"] == "video":
+    if any(s.get("codec_type") == "video" for s in state.get("streams", [])):
         await client.send_video(video=final_path, **upload_args)
     else:
         await client.send_document(document=final_path, **upload_args)
@@ -337,17 +405,32 @@ async def _ask_and_upload(client, query, state, processed_path):
 
 async def handle_media_callback(client, query):
     data = query.data or ""
-    state = _state_for(query)
     await query.answer()
-    if data == "media_cancel":
-        MEDIA_STATE.pop(query.from_user.id, None)
-        await _cleanup_state(state)
+    parts = data.split(":")
+    if len(parts) < 3 or parts[0] != "media":
+        return
+    nonce, action, args = parts[1], parts[2], parts[3:]
+    state = await _state_for(query, nonce)
+    if action == "cancel":
+        if state and MEDIA_STATE.get(query.from_user.id) is state:
+            MEDIA_STATE.pop(query.from_user.id, None)
+            await _cleanup_state(state)
         return await query.message.edit_text("❌ Media operation cancelled.")
     if not state:
         return await query.message.edit_text("⚠️ This media session expired. Please send the file again.")
 
     try:
-        if data == "media_rename":
+        async with state["lock"]:
+            if state["processing"]:
+                return await query.message.edit_text("⚙️ This media operation is already processing.")
+            return await _handle_media_action(client, query, state, action, args)
+    except Exception as exc:
+        logger.exception("Media operation failed for user %s", query.from_user.id)
+        await _fail(query, "The media operation could not be completed.")
+
+
+async def _handle_media_action(client, query, state, action, args):
+        if action == "rename":
             MEDIA_STATE.pop(query.from_user.id, None)
             await _cleanup_state(state)
             await query.message.edit_text("✏️ Starting the normal rename flow...")
@@ -355,51 +438,51 @@ async def handle_media_callback(client, query):
             return await auto_rename_files(client, state["source_message"], force=True)
 
         await _ensure_analyzed(client, query, state)
-        if data == "media_back":
+        if action == "back":
             return await query.message.edit_text(
                 "🎬 <b>Media actions</b>\nChoose an action:",
-                reply_markup=_menu_keyboard(),
+                reply_markup=_menu_keyboard(state),
             )
-        if data == "media_info":
-            return await query.message.edit_text(_info_text(state), reply_markup=InlineKeyboardMarkup(_back_button()))
-        if data == "media_audio":
+        if action == "info":
+            return await query.message.edit_text(_info_text(state), reply_markup=InlineKeyboardMarkup(_back_button(state)))
+        if action == "audio":
             return await _show_streams(query, state, "audio", "🎵 <b>Audio Tracks</b>", "audio")
-        if data == "media_subtitle":
+        if action == "subtitle":
             return await _show_streams(query, state, "subtitle", "📺 <b>Subtitle Tracks</b>", "subtitle")
-        if data == "media_video":
+        if action == "video":
             return await _show_streams(query, state, "video", "🎬 <b>Video Tracks</b>", "video")
-        if data == "media_remove":
+        if action == "remove":
             return await _show_streams(query, state, None, "🗑 <b>Remove Stream</b>", "remove")
-        if data.startswith("media_pick:"):
-            _, action, index = data.split(":", 2)
+        if action == "pick" and len(args) == 2:
+            picked_action, index = args
+            if picked_action not in {"audio", "subtitle", "video", "remove"}:
+                raise RuntimeError("Invalid stream action")
             stream = next((s for s in state["streams"] if str(s.get("index")) == index), None)
             if not stream:
                 return await query.message.edit_text("⚠️ That stream is no longer available.")
-            state["pending_action"] = action
+            state["pending_action"] = picked_action
             state["pending_index"] = int(index)
             label = _stream_label(stream)
-            if action == "remove":
+            if picked_action == "remove":
                 text = f"🗑 Remove <b>{label}</b>?\nThis cannot be undone for this output."
             else:
                 text = f"✅ Keep only <b>{label}</b> for this stream type?"
             return await query.message.edit_text(
                 text,
                 reply_markup=InlineKeyboardMarkup([
-                    [_button("✅ Confirm", "media_confirm"), _button("❌ Cancel", "media_back")]
+                    [_button("✅ Confirm", _callback(state, "confirm")), _button("❌ Cancel", _callback(state, "back"))]
                 ]),
             )
-        if data == "media_confirm":
+        if action == "confirm":
             action = state.pop("pending_action", None)
             index = state.pop("pending_index", None)
             if action is None or index is None:
-                return await query.message.edit_text("⚠️ No stream selection is pending.", reply_markup=_menu_keyboard())
+                return await query.message.edit_text("⚠️ No stream selection is pending.", reply_markup=_menu_keyboard(state))
+            state["processing"] = True
             await query.message.edit_text("⚙️ Processing with stream-copy remux...")
             processed = await _remux(state, action, index)
             name = await _ask_and_upload(client, query, state, processed)
             MEDIA_STATE.pop(query.from_user.id, None)
             await _cleanup_state(state)
             return await query.message.edit_text(f"✅ Completed: <code>{name}</code>")
-        return await query.message.edit_text("⚠️ Unknown media action.", reply_markup=_menu_keyboard())
-    except Exception as exc:
-        logger.exception("Media operation failed for user %s", query.from_user.id)
-        await _fail(query, str(exc))
+        return await query.message.edit_text("⚠️ Unknown media action.", reply_markup=_menu_keyboard(state))
