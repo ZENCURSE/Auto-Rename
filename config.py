@@ -45,9 +45,9 @@ class Config(object):
     BOT_UPTIME  = time.time()
     START_PIC   = os.environ.get("START_PIC", "https://i.ibb.co/VcHs0Zyn/b1977b3bc44e.jpg")
     LEADERBOARD_PIC = os.environ.get("LEADERBOARD_PIC", "https://i.ibb.co/kgbG0nFH/8da225d0b6b1.jpg")
-    OWNER_ID = _int_env(OWNER_ID"6426143861")
+    OWNER_ID = _int_env("OWNER_ID"‚ "6426143861")
     SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", "https://t.me/Code_Rips_Support")
-    LOG_CHANNEL = _int_env(LOG_CHANNEL"-1002656513017")
+    LOG_CHANNEL = _int_env("LOG_CHANNEL"‚ "-1002656513017")
     FSUB_PIC = os.environ.get("FSUB_PIC", "https://i.ibb.co/8gjQJFv4/da6bee925908.jpg")
     BOT_USERNAME = os.environ.get("BOT_USERNAME", "")
     LEADERBOARD_DELETE_TIMER = 30
