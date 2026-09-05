@@ -224,9 +224,9 @@ logger = logging.getLogger(__name__)
 @check_ban
 @check_fsub
 async def add_caption(client, message):
-    if len(message.command) == 1:
+    caption = message.text.split(" ", 1)[1].strip() if " " in message.text else ""
+    if not caption:
        return await message.reply_text("**Give The Caption\n\nExample :- `/set_caption 📕Name ➠ : {filename} \n\n🔗 Size ➠ : {filesize} \n\n⏰ Duration ➠ : {duration}`**")
-    caption = message.text.split(" ", 1)[1]
     await rexbots.set_caption(message.from_user.id, caption=caption)
     await message.reply_text("**Your Caption Successfully Added ✅**")
    

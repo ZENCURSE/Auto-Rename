@@ -1,14 +1,39 @@
-import re, os, time
+import os
+import re
+import time
+
 id_pattern = re.compile(r'^.\d+$') 
+
+
+def _int_env(name, default=None):
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        if default is not None:
+            return default
+        return None
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+
+
+def _bool_env(name, default=True):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 class Config(object):
     # pyro client config
-    API_ID    = os.environ.get("API_ID", "")
+    API_ID    = _int_env("API_ID")
     API_HASH  = os.environ.get("API_HASH", "")
     BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-    PORT = os.environ.get("PORT", "8980")
+    PORT = _int_env("PORT", 5000)
+    WORKERS = max(1, min(_int_env("WORKERS", 100), 200))
 
     # database config
-    DB_NAME = os.environ.get("DB_NAME", "")     
+    DB_NAME = os.environ.get("DB_NAME", "auto_rename")
     DB_URL  = os.environ.get("DB_URL", "")
  
     # other configs
@@ -18,14 +43,35 @@ class Config(object):
     BOT_UPTIME  = time.time()
     START_PIC   = os.environ.get("START_PIC", "https://i.ibb.co/VcHs0Zyn/b1977b3bc44e.jpg")
     LEADERBOARD_PIC = os.environ.get("LEADERBOARD_PIC", "https://i.ibb.co/kgbG0nFH/8da225d0b6b1.jpg")
-    OWNER_ID = int(os.environ.get("OWNER_ID", "6426143861"))
+    OWNER_ID = _int_env("OWNER_ID")
     SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", "https://t.me/Code_Rips_Support")
-    LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002656513017"))
+    LOG_CHANNEL = _int_env("LOG_CHANNEL")
     FSUB_PIC = os.environ.get("FSUB_PIC", "https://i.ibb.co/8gjQJFv4/da6bee925908.jpg")
     BOT_USERNAME = os.environ.get("BOT_USERNAME", "")
     LEADERBOARD_DELETE_TIMER = 30
     # wes response configuration     
-    WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
+    WEBHOOK = _bool_env("WEBHOOK", True)
+
+    @classmethod
+    def validate(cls):
+        missing = [
+            name for name, value in (
+                ("API_ID", cls.API_ID),
+                ("API_HASH", cls.API_HASH),
+                ("BOT_TOKEN", cls.BOT_TOKEN),
+                ("DB_URL", cls.DB_URL),
+                ("OWNER_ID", cls.OWNER_ID),
+                ("LOG_CHANNEL", cls.LOG_CHANNEL),
+            ) if value in (None, "")
+        ]
+        if missing:
+            raise RuntimeError(
+                "Missing required environment variables: " + ", ".join(missing)
+            )
+        if not cls.DB_NAME.strip():
+            raise RuntimeError("DB_NAME cannot be empty")
+        if not 1 <= cls.PORT <= 65535:
+            raise RuntimeError("PORT must be between 1 and 65535")
     
     #========================================================================================   
     START_TXT = """<b>ʜᴇʏ! {mention}  

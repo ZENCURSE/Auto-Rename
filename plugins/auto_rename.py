@@ -13,6 +13,7 @@ import logging
 from functools import wraps
 from config import Config
 import asyncio
+import re
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖
@@ -212,6 +213,21 @@ async def not_joined(client: Client, message: Message):
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+SUPPORTED_TEMPLATE_FIELDS = {"season", "episode", "quality", "audio"}
+
+
+def validate_format_template(template):
+    """Reject templates that can escape the per-user output directory."""
+    template = template.strip()
+    if not template or len(template) > 180:
+        return False, "Template must contain 1–180 characters."
+    if any(char in template for char in ("/", "\\", "\x00")):
+        return False, "Template cannot contain slashes or control characters."
+    unknown = set(re.findall(r"\{([^{}]+)\}", template)) - SUPPORTED_TEMPLATE_FIELDS
+    if unknown:
+        return False, "Unsupported placeholders: " + ", ".join(sorted(unknown))
+    return True, template
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖
@@ -234,6 +250,11 @@ async def auto_rename_command(client, message):
         return
 
     format_template = command_parts[1].strip()
+    valid, result = validate_format_template(format_template)
+    if not valid:
+        await message.reply_text(f"❌ {result}\n\nSupported placeholders: {{season}}, {{episode}}, {{quality}}, {{audio}}")
+        return
+    format_template = result
 
     # Save the format template in the database
     await rexbots.set_format_template(user_id, format_template)

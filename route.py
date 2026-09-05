@@ -4,7 +4,16 @@ routes = web.RouteTableDef()
 
 @routes.get("/", allow_head=True)
 async def root_route_handler(request):
-    return web.json_response("Madflix_Bots")
+    return web.json_response({
+        "status": "ok",
+        "service": "auto-rename-bot",
+        "message": "CodeRips auto-rename bot is running",
+    })
+
+
+@routes.get("/health", allow_head=True)
+async def health_route_handler(request):
+    return web.json_response({"status": "healthy"})
 
 
 async def web_server():

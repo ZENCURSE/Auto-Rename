@@ -29,12 +29,13 @@ PORT = Config.PORT
 # --
 class Bot(Client):
     def __init__(self):
+        Config.validate()
         super().__init__(
             name="rexbots",
             api_id=Config.API_ID,
             api_hash=Config.API_HASH,
             bot_token=Config.BOT_TOKEN,
-            workers=200,
+            workers=Config.WORKERS if hasattr(Config, "WORKERS") else 100,
             plugins={"root": "plugins"},
             sleep_threshold=15,
         )
@@ -50,10 +51,10 @@ class Bot(Client):
         self.mention = me.mention
         self.username = me.username
         self.uptime = Config.BOT_UPTIME
-        if Config.WEBHOOK:
-            app = web.AppRunner(await web_server())
-            await app.setup()
-            await web.TCPSite(app, "0.0.0.0", PORT).start()
+        # Keep an HTTP health endpoint available for Render/Replit uptime checks.
+        app = web.AppRunner(await web_server())
+        await app.setup()
+        await web.TCPSite(app, "0.0.0.0", PORT).start()
         print(f"{me.first_name} Is Started.....✨️")
         uptime_seconds = int(time.time() - self.start_time)
         uptime_string = str(timedelta(seconds=uptime_seconds))
@@ -76,7 +77,8 @@ class Bot(Client):
             except Exception as e:
                 print(f"Failed to send message in chat {chat_id}: {e}")
 
-Bot().run()
+if __name__ == "__main__":
+    Bot().run()
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖

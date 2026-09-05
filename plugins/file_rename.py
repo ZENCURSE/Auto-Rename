@@ -445,7 +445,7 @@ def extract_episode_number(filename):
         r'Multi(?:audio)?',
         r'Dual(?:audio)?',
     ]
-    quality_pattern_for_exclusion = r'(?:' + '|'.join([f'(?:[\s._-]*{ind})' for ind in quality_and_year_indicators]) + r')'
+    quality_pattern_for_exclusion = r'(?:' + '|'.join([rf'(?:[\s._-]*{ind})' for ind in quality_and_year_indicators]) + r')'
 
     patterns = [
         re.compile(r'S\d+[.-_]?E(\d+)', re.IGNORECASE),
@@ -518,7 +518,7 @@ def extract_season_number(filename):
         r'Multi(?:audio)?',
         r'Dual(?:audio)?',
     ]
-    quality_pattern_for_exclusion = r'(?:' + '|'.join([f'(?:[\s._-]*{ind})' for ind in quality_and_year_indicators]) + r')'
+    quality_pattern_for_exclusion = r'(?:' + '|'.join([rf'(?:[\s._-]*{ind})' for ind in quality_and_year_indicators]) + r')'
 
 
     patterns = [
@@ -711,13 +711,14 @@ async def auto_rename_files(client, message):
                 message_ids[user_id].append(reply_msg.id)
                 return
 
-            if media_preference:
+            if media_preference in {"document", "video", "audio"}:
                 media_type = media_preference
             else:
                 # Fallback to intelligent guessing if no preference is set
-                if file_name.endswith((".mp4", ".mkv", ".avi", ".webm")):
+                normalized_name = file_name.lower()
+                if normalized_name.endswith((".mp4", ".mkv", ".avi", ".webm", ".m4v")):
                     media_type = "document"
-                elif file_name.endswith((".mp3", ".flac", ".wav", ".ogg")):
+                elif normalized_name.endswith((".mp3", ".flac", ".wav", ".ogg", ".m4a")):
                     media_type = "audio"
                 else:
                     media_type = "video"
@@ -855,33 +856,23 @@ async def auto_rename_files(client, message):
             await msg.edit("Wᴇᴡ... Iᴀm Uᴘʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
             await message.reply_chat_action(ChatAction.PLAYING)
             
-            try:
-                await rexbots.col.update_one(
-                    {"_id": user_id},
-                    {
-                        "$inc": {"rename_count": 1},
-                        "$set": {
-                            "first_name": message.from_user.first_name,
-                            "username": message.from_user.username,
-                            "last_activity_timestamp": datetime.now()
-                        }
-                    }
-                )
-            except Exception as e:
-                logger.error(f"Failed to update database: {e}")
-
-            c_caption = await rexbots.get_caption(message.chat.id)
+            c_caption = await rexbots.get_caption(user_id)
             
             if c_caption:
-                caption = c_caption.format(
-                    filename=new_file_name,
-                    filesize=humanbytes(file_size),
-                    duration=human_readable_duration
-                )
+                try:
+                    caption = c_caption.format(
+                        filename=new_file_name,
+                        filesize=humanbytes(file_size),
+                        duration=human_readable_duration
+                    )
+                except (KeyError, ValueError):
+                    logger.warning("Invalid caption template for user %s; using filename", user_id)
+                    caption = f"**{new_file_name}**"
             else:
                 caption = f"**{new_file_name}**"
+            caption = caption[:1024]
                 
-            c_thumb = await rexbots.get_thumbnail(message.chat.id)
+            c_thumb = await rexbots.get_thumbnail(user_id)
 
             ph_path = None
             if c_thumb:
@@ -889,7 +880,7 @@ async def auto_rename_files(client, message):
             elif media_type == "video" and message.video and message.video.thumbs:
                 try:
                     ph_path = await client.download_media(message.video.thumbs[0].file_id)
-                except IndexError:
+                except Exception:
                     ph_path = None
 
             if ph_path:
@@ -929,7 +920,7 @@ async def auto_rename_files(client, message):
                     first_name = message.from_user.first_name
                     full_name = first_name
                     if message.from_user.last_name:
-                        full_name += f" {user.last_name}"
+                        full_name += f" {message.from_user.last_name}"
                     username = f"@{message.from_user.username}" if message.from_user.username else "N/A"
                     has_premium_accesss = await check_user_premium(user_id)
                     premium_status = '🗸' if has_premium_accesss else '✘'
@@ -971,7 +962,23 @@ async def auto_rename_files(client, message):
                         )
                 except Exception as e:
                     logger.error(f"Error sending to dump channel: {e}")
-                    await msg.edit(f"❌ Eʀʀᴏʀ: {str(e)}")
+                    logger.warning("Dump-channel delivery failed after successful upload: %s", e)
+
+            try:
+                await rexbots.col.update_one(
+                    {"_id": user_id},
+                    {
+                        "$inc": {"rename_count": 1},
+                        "$set": {
+                            "first_name": message.from_user.first_name,
+                            "username": message.from_user.username,
+                            "last_activity_timestamp": datetime.now()
+                        }
+                    },
+                    upsert=True,
+                )
+            except Exception as e:
+                logger.error(f"Failed to update database: {e}")
                     
             await msg.delete()
 
@@ -980,7 +987,7 @@ async def auto_rename_files(client, message):
             raise
         finally:
             # Clean up files
-            for path in [download_path, metadata_path]:
+            for path in [download_path, metadata_path, output_path, input_path, ph_path if "ph_path" in locals() else None]:
                 if path and os.path.exists(path):
                     try:
                         os.remove(path)
