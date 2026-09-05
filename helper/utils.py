@@ -8,7 +8,10 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 async def progress_for_pyrogram(current, total, ud_type, message, start):
     now = time.time()
     diff = max(now - start, 0.001)
-    if round(diff % 5.00) == 0 or current >= total:
+    # Avoid hammering Telegram with edits while large files are transferring.
+    if (diff < 1 and current < total) or (int(diff) % 3 != 0 and current < total):
+        return
+    if current >= total:
         total = max(total or 0, 1)
         current = min(max(current or 0, 0), total)
         percentage = current * 100 / total

@@ -31,6 +31,8 @@ class Config(object):
     BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
     PORT = _int_env("PORT", 5000)
     WORKERS = max(1, min(_int_env("WORKERS", 100), 200))
+    RENAME_CONCURRENCY = max(1, min(_int_env("RENAME_CONCURRENCY", 2), 8))
+    MAX_FILE_SIZE = _int_env("MAX_FILE_SIZE", 4 * 1024 ** 3)
 
     # database config
     DB_NAME = os.environ.get("DB_NAME", "auto_rename")

@@ -32,7 +32,7 @@ from os import makedirs
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖
 # 𝐀𝐍𝐘 𝐈𝐒𝐒𝐔𝐄𝐒 𝐎𝐑 𝐀𝐃𝐃𝐈𝐍𝐆 𝐌𝐎𝐑𝐄 𝐓𝐇𝐈𝐍𝐆𝐬 𝐂𝐀𝐍 𝐂𝐎𝐍𝐓𝐀𝐂𝐓 𝐌𝐄
 # ----------------------------------------
-Semaphore = asyncio.Semaphore(3)  # Fixed: Should be asyncio.Semaphore
+Semaphore = asyncio.Semaphore(Config.RENAME_CONCURRENCY)
 chat_data_cache = {}
 ADMIN_URL = Config.ADMIN_URL
 FSUB_PIC = Config.FSUB_PIC
@@ -688,6 +688,12 @@ async def auto_rename_files(client, message):
                 media_type = "audio"
             else:
                 return await message.reply_text("Unsupported file type")
+
+            if file_size and file_size > Config.MAX_FILE_SIZE:
+                return await message.reply_text(
+                    f"❌ This file is {humanbytes(file_size)}, above the configured "
+                    f"limit of {humanbytes(Config.MAX_FILE_SIZE)}."
+                )
                 
             if not file_name:
                 await message.reply_text("Could not determine file name.")
@@ -731,6 +737,9 @@ async def auto_rename_files(client, message):
             season_number = extract_season_number(file_name)
             audio_info_extracted = extract_audio_info(file_name)
             quality_extracted = extract_quality(file_name)
+            metadata_enabled = str(await rexbots.get_metadata(user_id)).strip().lower() in {
+                "on", "true", "1", "yes"
+            }
 
             print(f"DEBUG: Final extracted values - Season: {season_number}, Episode: {episode_number}, Quality: {quality_extracted}, Audio: {audio_info_extracted}")
 
@@ -789,8 +798,9 @@ async def auto_rename_files(client, message):
 
             _, file_extension = os.path.splitext(file_name)
 
-            # Force MP4 files to be converted to MKV to ensure subtitle compatibility
-            if file_extension.lower() in ['.mp4', '.m4v']:
+            # Remux only when metadata is enabled. Otherwise, keep the original
+            # container so a rename-only job stays a fast, low-disk operation.
+            if metadata_enabled and file_extension.lower() in ['.mp4', '.m4v']:
                 final_extension = ".mkv"
             else:
                 final_extension = file_extension
@@ -823,7 +833,7 @@ async def auto_rename_files(client, message):
                 await msg.edit(f"Dᴏᴡɴʟᴏᴀᴅ ғᴀɪʟᴇᴅ: {e}")
                 raise
 
-            if file_extension.lower() in ['.mp4', '.m4v']:
+            if metadata_enabled and file_extension.lower() in ['.mp4', '.m4v']:
                 await msg.edit("MP4! Dᴇᴛᴇᴄᴛᴇᴅ. Cᴏɴᴠᴇʀᴛɪɴɢ ᴛᴏ MKV...")
                 await message.reply_chat_action(ChatAction.PLAYING)
                 try:
@@ -844,7 +854,7 @@ async def auto_rename_files(client, message):
             human_readable_duration = convert(duration) if duration > 0 else "N/A"
             
             # Only add metadata if not already converted (to avoid double processing)
-            if not file_extension.lower() in ['.mp4', '.m4v']:
+            if metadata_enabled and file_extension.lower() not in ['.mp4', '.m4v']:
                 await msg.edit("Nᴏᴡ ᴀᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ ᴅᴜᴅᴇ...!!")
                 await message.reply_chat_action(ChatAction.PLAYING)
                 try:

@@ -2,7 +2,7 @@
   <img src="https://prod.assets.earlygamecdn.com/images/Chisa.jpg?transform=Banner+Webp" alt="Bot Banner" width="1920"/>
   <h1>Auto Rename Bot</h1>
   <p>
-    <b>A powerful and dynamic Telegram bot designed to automatically rename files up to 2GB, with a fully interactive, button-based UI that can be configured dynamically by the owner.</b>
+    <b>A powerful and dynamic Telegram bot designed to automatically rename large files up to a configurable 4 GiB limit, with a fully interactive, button-based UI that can be configured dynamically by the owner.</b>
   </p>
   
   <p>
@@ -24,6 +24,7 @@
 -   **⚙️ Dynamic Configuration:** The bot owner can manage all important settings directly from the bot's UI, without needing to restart.
 -   **🏆 User Leaderboard:** A built-in leaderboard tracks user activity and showcases the top file renamers.
 -   **🔒 Secure:** All sensitive information is loaded from environment variables, not hardcoded.
+-   **⚡ Large-file fast path:** Rename-only jobs avoid unnecessary FFmpeg work; the maximum input size defaults to 4 GiB and can be changed with `MAX_FILE_SIZE`.
 
 ---
 
@@ -102,6 +103,8 @@ You can easily deploy this bot yourself by following the steps below.
 | `DB_URL`      | Your MongoDB connection URL.               | **Yes**  |
 | `OWNER_ID`    | Your numerical Telegram User ID.           | **Yes**  |
 | `LOG_CHANNEL` | The ID of the channel for bot logs.        | **Yes**  |
+| `MAX_FILE_SIZE` | Maximum input size in bytes; defaults to 4 GiB. | No |
+| `RENAME_CONCURRENCY` | Concurrent rename jobs; defaults to 2 for smooth large-file processing. | No |
 
 
 4.  **Run the Bot:**
