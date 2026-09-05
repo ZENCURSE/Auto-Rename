@@ -659,6 +659,7 @@ async def auto_rename_files(client, message):
         metadata_path = None
         output_path = None
         input_path = None
+        job_dir = None
         
         try:
             user_id = message.from_user.id
@@ -810,14 +811,16 @@ async def auto_rename_files(client, message):
     
             new_file_name = f"{template}{final_extension}"
             user_folder = str(user_id)
-            download_path = os.path.join("downloads", user_folder, new_file_name)
-            metadata_path = os.path.join("metadata", user_folder, new_file_name)
-            output_path = os.path.join("processed", user_folder, new_file_name)
+            # Every job gets its own directory. Pyrogram creates a `.temp`
+            # sibling during downloads; a unique directory prevents retries
+            # for the same file from consuming each other's temp file.
+            job_dir = os.path.join("downloads", user_folder, uuid.uuid4().hex)
+            download_path = os.path.join(job_dir, new_file_name)
+            metadata_path = os.path.join(job_dir, f"metadata{final_extension}")
+            output_path = os.path.join(job_dir, f"output{final_extension}")
 
             # Create user-specific directories
-            os.makedirs(os.path.dirname(download_path), exist_ok=True)
-            os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            os.makedirs(job_dir, exist_ok=True)
 
             msg = await message.reply_text("Wᴇᴡ... Iᴀm ᴅᴏᴡɴʟᴏᴀᴅɪɴɢ ʏᴏᴜʀ ғɪʟᴇ...!!")
             await message.reply_chat_action(ChatAction.PLAYING)
@@ -1003,6 +1006,8 @@ async def auto_rename_files(client, message):
                         os.remove(path)
                     except Exception as e:
                         print(f"Error removing file {path}: {e}")
+            if job_dir and os.path.isdir(job_dir):
+                shutil.rmtree(job_dir, ignore_errors=True)
 # ----------------------------------------
 # 𝐌𝐀𝐃𝐄 𝐁𝐘 𝐀𝐁𝐇𝐈
 # 𝐓𝐆 𝐈𝐃 : @𝐂𝐋𝐔𝐓𝐂𝐇𝟎𝟎𝟖
