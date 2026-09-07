@@ -35,7 +35,7 @@ class Config(object):
     BOT_USERNAME = os.environ.get("BOT_USERNAME", "")
     LEADERBOARD_DELETE_TIMER = 30
     # wes response configuration     
-    WEBHOOK = bool(os.environ.get("WEBHOOK", "True"))
+    WEBHOOK = os.environ.get("WEBHOOK", "True").lower() == "true"
     
     #========================================================================================   
     START_TXT = """<b>ʜᴇʏ! {mention}  
