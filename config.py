@@ -23,7 +23,7 @@ class Config(object):
  
     # other configs
     ADMIN_URL = "https://t.me/ZENCURSE"
-    DUMP_CHANNEL = os.environ.get("DUMP_CHANNEL", "-1002543362757")
+    DUMP_CHANNEL = int(os.environ.get("DUMP_CHANNEL", "-1002543362757"))
     DUMP = True
     BOT_UPTIME  = time.time()
     START_PIC   = os.environ.get("START_PIC", "https://i.ibb.co/VcHs0Zyn/b1977b3bc44e.jpg")
